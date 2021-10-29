@@ -1,8 +1,11 @@
+# pip3 install beautifulsoup4
+# pip install pandas
+# pip install requests
+# pip install lxml
+
 import os
 import requests
-import sys
 import csv
-import time
 from os import path
 from bs4 import BeautifulSoup
 from requests.api import head
@@ -12,7 +15,6 @@ url = 'https://www.meteo.cat/observacions/llistat-xema'
 fileName = "XEMA_dataset.csv"
 
 def main(url, fileName):
-
     #Dataset file creation
     currentDir = os.path.dirname(__file__)
     filePath = os.path.join(currentDir, fileName)
@@ -20,7 +22,6 @@ def main(url, fileName):
 
 
 def getXEMAlist(url,filePath):
-
     html = getHTML(url) #type class 'str'
     soup = parseHTML(html) #type class 'bs4.BeautifulSoup'
     HTML_table = getHTMLTable(soup) #type class 'bs4.element.Tag'
@@ -32,7 +33,6 @@ def getXEMAlist(url,filePath):
     body = getBodyTable(html_table_body)
 
     write2CSV(filePath, headers, body)
-
 
 def getHTML(url):
 
@@ -65,6 +65,7 @@ def getHeaderData(html_header):
     headers = []
     for html_header in html_header:
         headers += [html_header.text]
+    headers = getCodeInBrackets(headers)
     return headers
 
 # BODY
@@ -78,9 +79,12 @@ def getHTMLTableBody(table):
 def getSingleTableBody(row):
     single_data = []
     for param in row:
-        single_data += [param.text]
+        single_data += [str(param.text)]
     removeNewLineCharacters(single_data)
     removeEmptyElements(single_data)
+    single_data = replaceCommaByDot(single_data)
+    single_data = getCodeInBrackets(single_data)
+    single_data = checkOperativeStations(single_data)
     return (single_data)
 
 def getBodyTable(html_body):
@@ -105,18 +109,50 @@ def removeEmptyElements(list):
         list.remove('')
     return list
 
-def write2CSV(filePath, headers, body):
-    f = open(filePath, 'w')
-    for h in headers:
-        f.write(h + ";")
-    f.write("\n")
-    
-    for row in body:
-        for i in row:
-            f.write(i + ";")
-        f.write("\n")
-    
-    f.close()
+# (src: https://www.tutorialspoint.com/python3/string_split.htm)
+def replaceCommaByDot(list):
+    newList = []
+    for i in list:
+        ni = i.replace(',','.')    
+        newList.append(ni)
+    return newList
 
+def getCodeInBrackets(list):
+    newList = []
+    name = ''
+    codi = ''
+    for i in list:
+        if (i.find('[')!=-1):
+            split = i.split(' [',1)
+            name = split[0]
+            split = (split[1]).split(']',1)
+            codi = split[0]
+            list.remove(i)
+    newList.append(name)
+    newList.append(codi)
+    for i in list:
+        newList.append(i)
+
+    return newList
+
+def checkOperativeStations(list):
+    newList = []
+    for i in list: 
+        if ((i.find('Operativa'))!=-1):
+            newList.append(None)
+            newList.append('Operativa')
+        else:
+            newList.append(i)  
+    return newList
+
+def write2CSV(filePath, headers, body):
+    print("Writting " + str(len(body)) + " rows to CSV file!")
+    with open(filePath, 'w', newline='') as csvFile:
+        writer = csv.writer(csvFile)
+        writer.writerow(headers)
+        for row in body:
+            writer.writerow(row)
+    csvFile.close()
+    print("CSV file created successfully!")
 
 main(url, fileName)
