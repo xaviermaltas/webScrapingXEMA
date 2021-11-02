@@ -13,14 +13,14 @@ from requests.api import head
 #global variables
 url = 'https://www.meteo.cat/observacions/llistat-xema'
 fileName = "XEMA_dataset.csv"
+globalMetricsList = ['Temperatura mitjana', 'Temperatura màxima', 'Temperatura mínima', 'Humitat relativa mitjana', 'Precipitiació acumulada']
 
 def main(url, fileName):
     #Dataset file creation
     currentDir = os.path.dirname(__file__)
     filePath = os.path.join(currentDir, fileName)
     getXEMAlist(url, filePath)
-
-
+    
 def getXEMAlist(url,filePath):
     html = getHTML(url) #type class 'str'
     soup = parseHTML(html) #type class 'bs4.BeautifulSoup'
@@ -66,6 +66,8 @@ def getHeaderData(html_header):
     for html_header in html_header:
         headers += [html_header.text]
     headers = getCodeInBrackets(headers)
+    for i in globalMetricsList:
+        headers.append(i)
     return headers
 
 # BODY
@@ -85,6 +87,12 @@ def getSingleTableBody(row):
     single_data = replaceCommaByDot(single_data)
     single_data = getCodeInBrackets(single_data)
     single_data = checkOperativeStations(single_data)
+    link = getXEMAlinks(row)
+    RDtable = getRDTableHTML(link)
+    RDinfo = getRDTableInfo(RDtable)
+    if(RDinfo != None):
+        for i in RDinfo[:5]:
+            single_data.append(i.strip())
     return (single_data)
 
 def getBodyTable(html_body):
@@ -94,6 +102,32 @@ def getBodyTable(html_body):
         body.append(clean_row)
     return (body)
 
+#SPECIFIC TABLE
+def getXEMAlinks(html_table):
+    link = ''
+    for l in html_table.select('a'):
+        link = (l.get('href'))
+    return link
+
+def getRDTableHTML(href):
+    if(href != ''):
+        link = 'https://www.meteo.cat/' + href
+        html = getHTML(link)
+        soup = parseHTML(html) 
+        table = soup.find_all("div", {"class": "table"})
+        return table
+    else:
+        return None
+
+def getRDTableInfo(html_table):
+    if(html_table != None):
+        tdList = []
+        for tr in html_table[0].select('tr'):
+            tdList.append((tr.select('td')[0]).text)
+        return tdList
+    else:
+        return None
+        
 #UTILS
 def printList(l):
     for e in l: 
@@ -107,6 +141,11 @@ def removeNewLineCharacters(list):
 def removeEmptyElements(list):
     while '' in list:
         list.remove('')
+    return list
+
+def removeNewLineCarriageReturn(list):
+    while '\r\n' in list:
+        list.remove('\r\n')
     return list
 
 # (src: https://www.tutorialspoint.com/python3/string_split.htm)
