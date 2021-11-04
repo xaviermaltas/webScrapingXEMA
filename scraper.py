@@ -1,19 +1,11 @@
-# pip3 install beautifulsoup4
-# pip install pandas
-# pip install requests
-# pip install lxml
-
 import os
 import requests
 import csv
-from os import path
 from bs4 import BeautifulSoup
-from requests.api import head
 
 #global variables
 url = 'https://www.meteo.cat/observacions/llistat-xema'
 fileName = "XEMA_dataset.csv"
-globalMetricsList = ['Temperatura mitjana', 'Temperatura màxima', 'Temperatura mínima', 'Humitat relativa mitjana', 'Precipitiació acumulada']
 
 def main(url, fileName):
     #Dataset file creation
@@ -62,11 +54,12 @@ def getHTMLTableHeader(table):
     return t_headers
 
 def getHeaderData(html_header):
+    metricsList = ['Temperatura mitjana', 'Temperatura màxima', 'Temperatura mínima', 'Humitat relativa mitjana', 'Precipitiació acumulada']
     headers = []
     for html_header in html_header:
         headers += [html_header.text]
     headers = getCodeInBrackets(headers)
-    for i in globalMetricsList:
+    for i in metricsList:
         headers.append(i)
     return headers
 
