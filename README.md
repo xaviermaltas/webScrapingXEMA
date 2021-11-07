@@ -27,5 +27,5 @@ python3 scraper.py
 ```
 ## Zenodo - Dataset
 ```
-10.5281/zenodo.5646289
+https://doi.org/10.5281/zenodo.5646289
 ```
